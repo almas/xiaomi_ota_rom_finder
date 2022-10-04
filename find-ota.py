@@ -9,7 +9,7 @@ import time
 DEVICE = 'xmen'
 PLATFORM_ID = 655
 ANDROID_VER = '6.0.1'
-CURRENT_BUILD = 1316
+CURRENT_BUILD = 952
 BUILD_DELTA = 1000
 BUILD_FIND = 2  # values: 1: 'upgrade', 2: 'downgrade'
 
@@ -27,7 +27,7 @@ updateUriTemplate = 'http://ota.cdn.pandora.xiaomi.com/rom/{platformId}/{device}
 myUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 
 _logger= logging.getLogger()
-_logger.setLevel(logging.DEBUG)
+_logger.setLevel(logging.INFO)
 handler = logging.FileHandler('ota-update-result-{}-{}-{}-{}.txt'.format(DEVICE, PLATFORM_ID, CURRENT_BUILD, BUILD_FIND), 'w', 'utf-8')
 formatter = logging.Formatter('%(message)s')
 handler.setFormatter(formatter) 
@@ -54,14 +54,14 @@ def get_try(ob, cb, connectionErrorCount=0, httpNotFoundCount=0):
                 time.sleep(httpNotFoundRetryDelay)
                 return get_try(ob, cb, connectionErrorCount=connectionErrorCount, httpNotFoundCount=httpNotFoundCount)
             else:
-                return False
+                return (False, ob)
 
         if res.status_code == 200:
             res_text = 'Found firmware update: {}'.format(u)
             print(res_text)
             _logger.info(res_text)
 
-            return True
+            return (True, ob)
     except requests.exceptions.ConnectionError:
         _logger.debug("Connection refused")
         if connectionErrorCount < connectionErrorRetry:
@@ -70,12 +70,12 @@ def get_try(ob, cb, connectionErrorCount=0, httpNotFoundCount=0):
             time.sleep(connectionErrorRetryDelay)
             return get_try(ob, cb, connectionErrorCount=connectionErrorCount, httpNotFoundCount=httpNotFoundCount)
 
-    return False
+    return (False, ob)
 
 
 def try_number(ob, cb):
     res = get_try(ob, cb)
-    if not res:
+    if not res[0]:
         res_text = 'Not found: {}'.format(ob)
         print(res_text)
         _logger.debug(res_text)
@@ -100,8 +100,8 @@ def main():
 
             c = 0
             for result in pool.starmap(try_number,  zip(ranges, repeat(cb))):
-                if result:
-                    worker_proccess(cb)
+                if result[0]:
+                    worker_proccess(result[1])
                 c += 1
 
         worker_proccess(CURRENT_BUILD)
