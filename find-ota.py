@@ -9,7 +9,7 @@ import time
 DEVICE = 'xmen'
 PLATFORM_ID = 655
 ANDROID_VER = '6.0.1'
-CURRENT_BUILD = 1350
+CURRENT_BUILD = 1316
 BUILD_DELTA = 1000
 BUILD_FIND = 2  # values: 1: 'upgrade', 2: 'downgrade'
 
@@ -27,14 +27,17 @@ updateUriTemplate = 'http://ota.cdn.pandora.xiaomi.com/rom/{platformId}/{device}
 myUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 
 _logger= logging.getLogger()
-_logger.setLevel(logging.INFO)
+_logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler('ota-update-result-{}-{}-{}-{}.txt'.format(DEVICE, PLATFORM_ID, CURRENT_BUILD, BUILD_FIND), 'w', 'utf-8')
 formatter = logging.Formatter('%(message)s')
 handler.setFormatter(formatter) 
 _logger.addHandler(handler)
 
 def get_try(ob, cb, connectionErrorCount=0, httpNotFoundCount=0):
-    u = updateUriTemplate.format(platformId=PLATFORM_ID, device=DEVICE, androidVer=ANDROID_VER, otaBuild=ob, currentBuild=cb)
+    if BUILD_FIND == 2:
+        u = updateUriTemplate.format(platformId=PLATFORM_ID, device=DEVICE, androidVer=ANDROID_VER, otaBuild=cb, currentBuild=ob) # Downgrade
+    else:
+        u = updateUriTemplate.format(platformId=PLATFORM_ID, device=DEVICE, androidVer=ANDROID_VER, otaBuild=ob, currentBuild=cb) # Upgrade
 
     try:
         _logger.debug('start: {}:{}: '.format(cb, ob))
